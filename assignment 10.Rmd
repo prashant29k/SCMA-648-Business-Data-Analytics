@@ -1,0 +1,188 @@
+---
+title: "Assignment 10 "
+author: "Prashant Gupta"
+Vid: "V01038654"
+output: html_document
+---
+
+## Problem 14.4
+
+```{r message=FALSE, warning=FALSE}
+library(arules)
+library(arulesViz)
+```
+
+
+```{r}
+ct.df <- read.csv("Coursetopics.csv")
+summary(ct.df)
+```
+
+```{r}
+ct.mat <- as.matrix(ct.df) # converting to matrix from dataframe
+head(ct.mat)
+```
+
+```{r}
+ct.trans <- as(ct.mat, "transactions")  # converting to "transaction" class
+ct.trans@itemInfo
+```
+
+```{r}
+rules <- apriori(ct.trans, parameter = list(supp = 7/365, conf = 0.6, target = "rules"))
+```
+
+```{r}
+inspect(sort(rules, by= 'lift'))
+```
+
+```{r}
+library(tidyverse)
+rules.tbl <- inspect(rules)
+rules.tbl[rules.tbl$support >= 0.02 & rules.tbl$confidence >= 0.6,] 
+``` 
+
+
+```{r}
+plot(rules)  
+```
+
+```{r}
+itemFrequencyPlot(ct.trans, ylim=c(0.0,0.5))
+```
+
+
+```{r}
+mydata <-  read.csv("Universities-1.csv")
+head(mydata)
+```
+
+## Problem 15.1
+
+### 1. Remove all records with missing measurements from the dataset.
+
+```{r}
+mydata_clean <- na.omit(mydata)
+
+library(dplyr)
+
+# print no. of rows and columns in the dataframe
+print(paste("No. of rows:", nrow(mydata_clean)))
+print(paste("No. of cols:", ncol(mydata_clean)))
+```
+
+### 2.For all the continuous measurements, run k-means clustering using Euclidean distance. Make sure to normalize the measurements. How many clusters should we use?
+
+
+```{r}
+categorical_variables <- names(select(mydata_clean,"State","Public..1...Private..2."))
+print(categorical_variables)
+```
+```{r}
+continuous_variables <- setdiff(names(which(sapply(mydata_clean, is.numeric))),("Public..1...Private..2."))
+print(continuous_variables)
+```
+
+```{r}
+mydata_normalised <- as.data.frame(scale(mydata_clean[,continuous_variables]))
+dist_mat <- dist(mydata_normalised, method = 'euclidean')
+hcluster <- hclust(dist_mat, method = "complete")
+```
+
+```{r}
+# plot the dendogram
+plot(hcluster,cex=0.6)
+abline(h = 12, col = 'red')
+
+# from the dendogram we select 6 clusters
+# draw dendogram with red borders around the 6 clusters
+rect.hclust(hcluster, k=6, border="green")
+```
+
+```{r}
+# coloring the dendogram branches according to cluster
+suppressPackageStartupMessages(library(dendextend))
+dend_obj <- as.dendrogram(hcluster)
+col_dend <- color_branches(dend_obj, h= 12)
+plot(col_dend)
+```
+
+```{r}
+# getting clusters
+sub_grp <- cutree(hcluster, k = 6)
+# cluster count
+table(sub_grp)
+```
+
+
+### 3. Compare the summary statistics for each cluster and describe each cluster in this context (e.g., “Universities with high tuition, low acceptance rate...”).
+
+```{r}
+# Adding the clusters to the table in a column named "class"
+mydata_clean['class']<-as.factor(sub_grp)
+```
+
+```{r}
+# grouping the continuous data by 'class' and taking mean (cluster centers)
+cluster_table<-aggregate(mydata_clean[continuous_variables],by=mydata_clean['class'],mean)
+summary(cluster_table)
+```
+
+```{r}
+# In this case there are three major clusters i.e. cluster 1, 2 and 3 and three outliers as cluster i.e. cluster 4, 5 
+# and 6. We will
+
+# cluster 1: Universities with low tution (both in_state and out_state) and  high acceptance rate.
+
+# cluster 2: Universities with high tution (both in_state and out_state) and low acceptance rate.
+
+# cluster 3: Universities with low in_state tution and high out_state tution and high acceptance rate.
+```
+
+
+### 4. Use the categorical measurements that were not used in the analysis (State and Private/Public) to characterize the different clusters. Is there any relationship between the clusters and the categorical information?
+
+```{r}
+# grouping the categorical data by class
+cat_cluster_table<- group_by(mydata_clean[categorical_variables],by=mydata_clean['class'])
+summary(cat_cluster_table)
+
+# cluster 1
+table(mydata_clean$Public..1...Private..2.[mydata_clean$class == 1])
+print("Cluster 1 has a comparable number of Private and Public colleges")
+
+# cluster 2
+table(mydata_clean$Public..1...Private..2.[mydata_clean$class == 2])
+print("Cluster 2 has a majority of Private colleges")
+
+# cluster 3
+table(mydata_clean$Public..1...Private..2.[mydata_clean$class == 3])
+print("Cluster 3 has a majority of Public colleges")
+
+# all in all, the three clusters have an ample number of Private colleges than Public due to the fact that the 
+# dataset has more private colleges as compared to public ones.
+
+# We can infer from cluster 2 that Private colleges has higher tution fees.
+```
+
+### 5. What other external information can explain the contents of some or all of these clusters?
+
+
+```{r}
+# Out of the three major clusters, Cluster3 has most number of Full Time undergrads and cluster2 has the least number
+# of Full Time undergrads.
+
+# There is a similar trend for Part Time undergrads as that of FUll Time undergrads.
+# We can say that the more students choose Public colleges over Private colleges
+
+# add fees is higher in the cluster3 (majority Public colleges) as compared to the clusters having higher number of 
+# private colleges.
+
+# graduation rate is the highest for cluster2 i.e. Universities with high tution (both in_state and out_state) and 
+# low acceptance rate.
+
+# no. of new students from top 10 and top 25 is highest for cluster2 i.e. Universities with high tution 
+# (both in_state and out_state) and low acceptance rate.
+```
+
+```{r}
