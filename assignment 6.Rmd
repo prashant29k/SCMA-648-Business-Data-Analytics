@@ -1,0 +1,63 @@
+---
+title: "Assignment 6 "
+author: "Prashant Gupta"
+Vid: "V01038654"
+output: html_document
+---
+```{r}
+library(fastDummies)
+library(rpart)
+library(caret)
+library(adabag)
+library(dplyr)
+```
+
+
+```{r}
+ebay <- read.csv("eBayAuctions.csv", stringsAsFactors = FALSE)
+head(ebay)
+```
+
+### A.Fit a classification tree using all predictors, using the best-pruned tree using 5-fold cross validation.
+
+```{r}
+ebay= ebay[,-1]
+data_dummies = dummy_cols(ebay, remove_first_dummy = TRUE, select_columns =colnames(select_if(ebay, is.character)), remove_selected_columns = TRUE)
+data_dummies$Competitive.= as.factor(data_dummies$Competitive.)
+head(data_dummies)
+```
+
+```{r}
+n = nrow(data_dummies)
+set.seed(101)
+trainIndex = sample(1:n, size = round(0.7*n), replace=FALSE)
+train = data_dummies[trainIndex ,]
+test = data_dummies[-trainIndex ,]
+
+fit = rpart(Competitive. ~., data = train)
+printcp(fit)
+```
+
+```{r}
+fit.pruned = prune(fit, cp = 0.010000)
+pred <- predict(fit.pruned, test[,-5],type = "class")
+confusionMatrix(table(test$Competitive.,pred))
+```
+
+```{r}
+ebay_boosting= boosting(Competitive. ~., data=train)
+pred = predict(ebay_boosting, test)
+print(pred$confusion)
+```
+
+
+### B.Is this model practical for predicting the outcome of a new auction?
+#### I think this model can be used for predicting outcome of new auction.
+
+
+
+### D.Examine the confusion matrix for the tree on the training and validation data. What can you say about the predictive performance of this model?
+```{r}
+confusionMatrix(pred$confusion)
+```
+#### looking at the confusion matrix i could say our model performs good enough.
