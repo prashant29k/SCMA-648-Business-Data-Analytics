@@ -1,0 +1,183 @@
+---
+title: "Assignment 8 "
+author: "Prashant Gupta"
+Vid: "V01038654"
+output: html_document
+---
+```{r message=FALSE, warning=FALSE}
+library(forecast)
+
+```
+
+### Laoding the Data
+
+```{r}
+wine.data = read.csv('AustralianWines.csv')
+
+```
+
+
+```{r}
+wine.ts <- ts(wine.data$Fortified, 
+                   start = c(1980, 1), end = c(1993, 12), freq = 12)
+```
+
+```{r}
+nValid <- 36
+nTrain <- length(wine.ts) - nValid
+
+# partition the data
+train.ts <- window(wine.ts, start = c(1980, 1), end = c(1980, nTrain))
+valid.ts <- window(wine.ts, start = c(1980, nTrain + 1), 
+                   end = c(1980, nTrain + nValid))
+```
+
+```{r}
+
+plot(train.ts, xlab = "Time", ylab = "Fortified Wine")
+```
+
+### 1. Fit a regression model to the training data with a linear trend and additive seasonality.
+
+```{r}
+train.lm.trend.season <- tslm(train.ts ~ trend + season)
+summary(train.lm.trend.season)
+train.lm.trend.season.pred <- forecast(train.lm.trend.season, h = nValid)
+```
+
+```{r}
+plot(train.ts, ylab = "Fortified Wine", xlab = "Time", bty = "l", 
+     xlim = c(1980,1993), main = "")
+lines(train.lm.trend.season.pred$fitted, lwd = 2, col = "blue", lty = 3)
+lines(train.lm.trend.season.pred$mean, lwd = 2, col = "blue", lty = 3)
+lines(valid.ts, col = "grey20", lty = 3)
+```
+
+### Forecast
+
+```{r}
+plot(train.lm.trend.season.pred, ylab = "Fortified Wine", xlab = "Time", bty = "l", 
+     xlim = c(1980,1993), main = "")
+```
+
+### 2.Fit an ARIMA model
+
+#### What level of differencing do you need?
+```{r}
+ndiffs(train.ts)
+
+
+nsdiffs(train.ts)
+
+```
+### So d = 1 D = 1, 
+
+### Create an ACF and PACF plot on the differenced data.
+
+```{r}
+
+double.diff.train.ts <- diff(diff(train.ts, 1), 12)
+tsdisplay(double.diff.train.ts)
+```
+
+#### We can try any of p = 1 or q = 1 and P = 1 or Q = 1
+
+
+### What AR and MA terms do you need?
+```{r}
+ARIMA1.fit <- Arima(train.ts, order = c(1,1,0), seasonal=c(1,1,0))
+summary(ARIMA1.fit)
+```
+
+```{r}
+ARIMA2.fit <- Arima(train.ts, order = c(0,1,1), seasonal=c(1,1,0))
+summary(ARIMA2.fit)
+```
+
+```{r}
+ARIMA3.fit <- Arima(train.ts, order = c(1,1,0), seasonal=c(0,1,1))
+summary(ARIMA3.fit)
+```
+
+```{r}
+ARIMA4.fit <- Arima(train.ts, order = c(0,1,1), seasonal=c(0,1,1))
+summary(ARIMA4.fit)
+```
+
+### What ARIMA model would you recommend for this data? (If you are unsure then try several)
+
+
+#### p = 0, d = 1, q = 1, P = 0, D = 1, Q = 1
+
+### Fit your recommended ARIMA model
+
+```{r}
+man.ARIMA.fit <- Arima(train.ts, order = c(0,1,1), seasonal=c(0,1,1))
+summary(man.ARIMA.fit)
+```
+
+```{r}
+man.ARIMA.pred <- forecast(man.ARIMA.fit, h = nValid)
+```
+
+### Create a plot to compare the fit to the training and validation set.
+
+```{r}
+plot(train.ts, ylab = "Fortified Wine", xlab = "Time", bty = "l", 
+     xlim = c(1980,1993), main = "")
+lines(man.ARIMA.pred$fitted, lwd = 2, col = "blue", lty = 3)
+lines(man.ARIMA.pred$mean, lwd = 2, col = "blue", lty = 3)
+lines(valid.ts, col = "grey20", lty = 3)
+```
+
+### Create a plot to show the forecast and prediction interval.
+
+```{r}
+plot(man.ARIMA.pred, ylab = "Fortified Wine", xlab = "Time", bty = "l", 
+     xlim = c(1980,1993), main = "")
+```
+
+### 3.Use auto.arima() to fit an ARIMA (p, d, q) (P, D, Q) model to the training data
+
+```{r}
+auto.ARIMA.fit <- auto.arima(train.ts)
+summary(auto.ARIMA.fit) 
+```
+
+```{r}
+auto.ARIMA.pred <- forecast(auto.ARIMA.fit, h = nValid)
+```
+
+
+### Create a plot to compare the fit to the training and validation set.
+```{r}
+plot(train.ts, ylab = "Fortified Wine", xlab = "Time", bty = "l", 
+     xlim = c(1980,1993), main = "")
+lines(auto.ARIMA.pred$fitted, lwd = 2, col = "blue", lty = 3)
+lines(auto.ARIMA.pred$mean, lwd = 2, col = "blue", lty = 3)
+lines(valid.ts, col = "grey20", lty = 3)
+```
+
+### Create a plot to show the forecast and prediction interval.
+
+```{r}
+plot(auto.ARIMA.pred, ylab = "Fortified Wine", xlab = "Time", bty = "l", 
+     xlim = c(1980,1993), main = "")
+```
+
+### 4.Which model predicts the validation data most accurately?
+```{r}
+accuracy(train.lm.trend.season.pred, valid.ts)
+
+```
+```{r}
+accuracy(man.ARIMA.pred, valid.ts)
+
+```
+
+```{r}
+
+accuracy(auto.ARIMA.pred, valid.ts)
+```
+
+#### auto.ARIMA model is the best because it's RMSE better overall.
