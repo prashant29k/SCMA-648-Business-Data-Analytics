@@ -1,0 +1,214 @@
+---
+title: "Assignment 2"
+author: "Prashant Gupta"
+Vid: "V01038654"
+output: html_document
+---
+
+## Problem 4.1
+
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(esquisse)
+library(corrplot)
+library(devtools)
+library(ggbiplot)
+```
+
+
+#### Loading the Data
+```{r}
+data= read.csv("Cereals.csv")
+```
+
+### A.Which variables are quantitative/numerical? Which are ordinal? Which are nominal?
+
+
+```{r}
+glimpse(data)
+```
+
+#### Quantitative Variables
+```{r}
+print(colnames(select_if(data, is.character)))
+```
+
+
+#### Numeric Variables
+
+```{r}
+quancols=(colnames(select_if(data, is.numeric)))
+print(quancols)
+```
+
+### B.Compute the mean, median, min, max, and standard deviation for each of the quantitative variables. This can be done through R’s sapply() function (e.g., sapply(data, mean, na.rm = TRUE)) or with dplyr.
+
+
+##### Filtering Numerical Data 
+
+```{r}
+quan = select_if(data, is.numeric)
+```
+
+#### MEAN
+
+```{r}
+sapply(quan,mean, na.rm= TRUE)
+```
+
+#### MEDIAN
+
+```{r}
+sapply(quan,median, na.rm= TRUE)
+```
+
+#### MIN
+
+```{r}
+sapply(quan,min, na.rm= TRUE)
+```
+
+#### MAX
+
+```{r}
+sapply(quan,max, na.rm= TRUE)
+```
+
+#### Standard Deviation
+
+```{r}
+sapply(quan,sd, na.rm= TRUE)
+```
+
+#### C.Use R to plot a histogram for each of the quantitative variables. Based on the histograms and summary statistics, answer the following questions:
+
+#### - Which variables have the largest variability?
+
+#### - Which variables seem skewed?
+
+#### - Are there any values that seem extreme?
+
+
+
+```{r warning=FALSE}
+library(tidyverse)
+ggplot(gather(quan), aes(value)) + geom_histogram(bins = 30L, fill = "#0C6C8A") +
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5)) + facet_wrap(~key, scales = 'free_x')
+```
+
+```{r}
+summary(quan)
+```
+
+
+```{r}
+sort(sapply(quan,var, na.rm= TRUE),decreasing = TRUE)
+```
+
+##### -Sodium amoungt all Variable has the Highest variablity 
+
+##### -Protein, fat, sodium, fiber, potass, vitamins and Ratings appear to be skewed
+
+##### -In the Vitamins variable we can see that there is a extreme value(25)
+
+
+#### D.Use R to plot a side-by-side boxplot comparing the calories in hot vs. cold cereals. What does this plot show us? 
+
+```{r}
+ggplot(data) +
+ aes(x = "", y = calories, colour = type) +
+ geom_boxplot(fill = "#112446") +
+ scale_color_manual(values = c(C = "#F8766D", 
+H = "#FF61C3")) +
+ theme_minimal()
+
+```
+##### With this plot we can see that there are very less cold cereals (only 2) and there are many hot cereals but they have 7 outliers.
+
+
+#### E. Use R to plot a side-by-side boxplot of consumer rating as a function of the shelf height. If we were to predict consumer rating from shelf height, does it appear that we need to keep all three categories of shelf height?
+
+```{r}
+data$shelf=as.factor(data$shelf)
+
+```
+
+```{r}
+ggplot(data) +
+ aes(x = "", y = rating, colour = shelf) +
+ geom_boxplot(fill = "#112446") +
+ scale_color_hue(direction = 1) +
+ theme_minimal()
+
+
+```
+##### Althog shelf 3 is right skew but i think we should keep all the shelf.
+
+
+#### F.Compute the correlation table for the quantitative variable (function cor()). In addition, generate a matrix plot for these variables (function plot(data)).
+
+#### - Which pair of variables is most strongly correlated?
+
+#### - How can we reduce the number of variables based on these correlations?
+
+#### - How would the correlations change if we normalized the data first?
+
+```{r}
+corr=cor(quan, method = "pearson")
+corrplot(corr, method = "number")
+```
+##### Weight and calories have the most positive correlation (.70) whereas rating and calories have the most negative correlation (-0.69)
+
+
+#### G. Consider the first PC of the analysis of the 13 numerical variables in Table 4.11. Describe briefly what this PC represents. 
+
+
+```{r}
+pca=prcomp(na.omit(quan))
+summary(pca)
+```
+
+```{r}
+ggbiplot(pca , varname.size = 2.5)
+```
+
+
+### Problem 4.2
+
+```{r}
+data2= read.csv("Universities.csv")
+```
+
+
+
+```{r}
+glimpse(data2)
+```
+
+#### A.Remove all categorical variables. Then remove all records with missing numerical measurements from the dataset.
+
+```{r}
+quan2 = select_if(data2, is.numeric)
+```
+
+```{r}
+head(quan2)
+```
+```{r}
+quan2=na.omit(quan2)
+```
+
+
+#### B.Conduct a principal components analysis on the cleaned data and comment on the results. Should the data be normalized? Discuss what characterizes the components you consider key.
+
+```{r}
+pca2=prcomp(quan2)
+summary(pca2)
+```
+
+```{r}
+ggbiplot(pca2)
+```
+
