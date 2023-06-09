@@ -1,0 +1,184 @@
+---
+title: "Assignment 9"
+author: "Prashant Gupta"
+Vid: "V01038654"
+output: html_document
+---
+
+```{r warning=FALSE}
+library(forecast)
+
+```
+
+
+
+### Loading The Data
+```{r}
+shampoo.df <- read.csv("ShampooSales.csv")
+shampoo.ts <- ts(shampoo.df$Shampoo.Sales, 
+                   start = c(1995, 1), end = c(1997, 12), freq = 12)
+```
+
+
+### Splitting the data into training and validation, keeping the last 3 months for validation.
+
+```{r}
+
+nValid <- 3
+nTrain <- length(shampoo.ts) - nValid
+train.ts <- window(shampoo.ts, start = c(1995, 1), end = c(1995, nTrain))
+valid.ts <- window(shampoo.ts, start = c(1995, nTrain + 1), 
+                   end = c(1995, nTrain + nValid))
+```
+
+
+### Fitting an exponential smoothing model
+
+```{r}
+plot(train.ts, xlab = "Time", ylab = "Shampoo Sales", bty = "l")
+```
+#### We can see that there is Upward Exponantial Trend with additive Seasonality.
+
+```{r}
+seasonplot(train.ts, ylab="Shampoo Sales", 
+           xlab="Year", main="Seasonal Plot", year.labels=TRUE)
+```
+
+
+```{r}
+monthplot(train.ts, ylab="Shampoo Sales", 
+          xlab="Year", main="Seasonal Deviation Plot")
+```
+
+#### We can jee that either people but more shampoo July-Aug or they but at Sep- Nov
+
+
+### What ETS() model would you recommend for this data?
+```{r}
+ETS.model1 <- ets(train.ts, model = "AMA", restrict=FALSE) # Additive error, multiplicative trend, additive season
+ETS.model1
+```
+
+
+
+```{r}
+ETS.model2 <- ets(train.ts, model = "AMN", restrict=FALSE) # Additive error, multiplicative trend, no season
+ETS.model2
+```
+
+```{r}
+ETS.model3 <- ets(train.ts, model = "AAA", restrict=FALSE) # Additive error, additive trend, additive season
+ETS.model3
+```
+
+```{r}
+ETS.model4 <- ets(train.ts, model = "AAN", restrict=FALSE) # Additive error, additive trend, no season
+ETS.model4
+```
+
+```{r}
+ETS.model5 <- ets(train.ts, model = "MMA", restrict=FALSE) # Multiplicative error, multiplicative trend, additive season
+ETS.model5
+```
+
+```{r}
+ETS.model6 <- ets(train.ts, model = "MMN", restrict=FALSE) # Multiplicative error, multiplicative trend, no season
+ETS.model6
+```
+
+```{r}
+ETS.model7 <- ets(train.ts, model = "MAA", restrict=FALSE) # Multiplicative error, additive trend, additive season
+ETS.model7
+```
+
+```{r}
+ETS.model8 <- ets(train.ts, model = "MAN", restrict=FALSE) # Multiplicative error, additive trend, no season
+ETS.model8
+
+```
+
+```{r}
+ETS.alg.model <- ets(train.ts, restrict = FALSE)
+ETS.alg.model
+```
+
+```{r}
+ETS.model2.pred <- forecast(ETS.model2, h = nValid)
+ETS.alg.model.pred <- forecast(ETS.alg.model, h = nValid)
+```
+
+### Fit an ARIMA model
+
+```{r}
+tsdisplay(train.ts)
+```
+
+### What level of differencing do you need?
+
+```{r}
+diff1.train.ts <- diff(train.ts, lag = 1)
+tsdisplay(diff1.train.ts)
+```
+
+```{r}
+diff2.train.ts <- diff(train.ts, lag = 2)
+tsdisplay(diff2.train.ts)
+```
+
+```{r}
+diff12.train.ts <- diff(train.ts, lag = 12)
+tsdisplay(diff12.train.ts)
+```
+
+```{r}
+ndiffs(train.ts)
+```
+
+```{r}
+nsdiffs(train.ts)
+```
+
+### Create an ACF and PACF plot on the differenced data.
+
+```{r}
+
+tsdisplay(diff1.train.ts)
+```
+
+# Fit your recommended ARIMA model.
+
+```{r}
+ARIMA.model1 <- Arima(train.ts, order = c(1,1,0), seasonal=c(0,0,0))
+summary(ARIMA.model1)
+```
+
+```{r}
+ARIMA.model2 <- Arima(train.ts, order = c(0,1,1), seasonal=c(0,0,0))
+summary(ARIMA.model2)
+```
+
+```{r}
+ARIMA.model3 <- Arima(train.ts, order = c(1,1,1), seasonal=c(0,0,0))
+summary(ARIMA.model3)
+```
+
+```{r}
+ARIMA.alg.model <- auto.arima(train.ts)
+summary(ARIMA.alg.model)
+```
+
+```{r}
+ARIMA.model1.pred <- forecast(ARIMA.model1, h = nValid)
+ARIMA.alg.pred <- forecast(ARIMA.alg.model, h = nValid)
+```
+
+### Assess the predictive accuracy of your ETS and ARIMA models in cross-validation?
+
+
+```{r}
+accuracy(ETS.model2.pred, valid.ts)
+accuracy(ETS.alg.model.pred, valid.ts)
+accuracy(ARIMA.model1.pred, valid.ts)
+accuracy(ARIMA.alg.pred, valid.ts)
+```
+
