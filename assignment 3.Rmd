@@ -1,0 +1,59 @@
+---
+title: "Assignment 3"
+author: "Prashant Gupta"
+Vid: "V01038654"
+output: html_document
+---
+
+## A
+
+### Why should the data be partitioned into training and validation sets?
+
+#### The primary reason for partitioning your data set into training and validation sets is to perform model selection.
+
+#### When selecting a model, you want to find the model that generalizes the best to new data. However, when building a model, you usually only have the data in front of you. In other words, you don't have any new information. So you divide your data so that one of the splits is the unseen/new data.
+
+### What will the training set be used for?
+
+#### Typically, training data is larger than testing data. This is due to the fact that we want to feed the model as much data as possible in order to find and learn meaningful patterns. When we feed data from our datasets to a machine learning algorithm, it learns 
+
+### What will the validation set be used for?
+
+#### Once your machine learning model has been built (using your training data), you will need unseen data to test it. This data is referred to as testing data, and it can be used to assess the performance and progress of your algorithms' training and to adjust or optimize it for better results.
+
+## B
+
+```{r}
+library(readxl)
+```
+
+```{r}
+data=read.csv("BostonHousing.csv")
+```
+
+```{r}
+head(data)
+```
+
+```{r}
+reg=lm(MEDV~CRIM+CHAS+RM, data= data)
+summary(reg)
+
+
+```
+
+### Equation for median house price from the predictors in the model is
+#### <b>MEDV = −28.81−0.26∗CRIM+3.76∗CHAS+8.28∗RM<b/>
+
+## C
+
+```{r}
+new <- data.frame(CRIM =c(0.1), CHAS =c(0), RM=c(6))
+```
+
+
+```{r}
+predict(reg, newdata=new)
+```
+
+#### The house median price where area does not bound the Charles River, has a crime rate of 0.1, and where the average number of rooms per house is 6 = <b>20.83232</b>
