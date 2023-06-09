@@ -1,0 +1,158 @@
+---
+title: "Assignment 1"
+author: "Prashant Gupta"
+Vid: "V01038654"
+output: html_document
+---
+
+```{r message=FALSE, warning=FALSE}
+library(forecast)
+library(TSstudio)
+library(dplyr)
+library(ggplot2)
+library(esquisse)
+
+```
+
+## Problem 3.1
+
+### Loading the Data
+```{r}
+data= read.csv("ApplianceShipments.csv")
+```
+
+```{r}
+data
+```
+
+```{r}
+data.ts <- ts(data$Shipments, start = c(1985, 1), end = c(1989, 4), freq = 4)
+```
+
+```{r}
+data.ts
+```
+
+```{r}
+ts_info(data.ts)
+```
+
+#### 1.Create a well-formatted time plot of the data using R.
+
+```{r}
+ts_plot(data.ts,
+        title = "Shipments of Household Appliances",
+        Xtitle = "Time",
+        Ytitle = "(millions of dollars) of US household appliances")
+```
+
+
+#### 2.Does there appear to be a quarterly pattern? For a closer view of the patterns, zoom
+#### in to the range of 3500–5000 on the y-axis.
+
+```{r}
+plot(data.ts, xlab = "Time", ylab = "(millions of dollars) of US household appliances", ylim = c(3500, 5000))
+```
+
+##### There seems to be a pattern, the amount is always increasing in Q1 for all years.
+
+
+#### 3.Using R, create one chart with four separate lines, one line for each of Q1, Q2, Q3, and Q4. In R, this can be achieved by generating a data.frame for each quarter Q1, Q2, Q3, Q4, and then plotting them as separate series on the line graph. Zoom in to the range of 3500–5000 on the y-axis. Does there appear to be a difference between quarters?
+
+
+```{r}
+par(oma = c(0,0,0,2))
+xrange <- c(1,5)
+yrange <- range(data.ts)
+plot(xrange, yrange, main = "Shipments by Quarter", type = "n", xlab = "Year", ylab =
+"Shipments", bty = "l")
+colors <- rainbow(4)
+linetype <- c(1:4)
+plotchar <- c(1:4)
+for (i in 1:4) {
+current_quarter <- subset(data.ts, cycle(data.ts)==i)
+lines(current_quarter, type="b", lwd=1.5, lty=linetype[i], col=colors[i], pch=plotchar[i])
+}
+legend(5.1 ,5000, 1:4, cex=0.8, col=colors, pch=plotchar, lty=linetype, title="Quarter",
+xpd=NA)
+
+```
+
+##### From the above Graph we can see that Q2 and Q3 are better than the other Quarters.
+
+
+#### 4. Using R, create a line graph of the series at a yearly aggregated level (i.e., the total shipments in each year).
+
+
+```{r}
+yearly =aggregate(data.ts, nfrequency=1, FUN=sum)
+```
+
+```{r}
+plot(yearly,xlab = "Years", ylab = "(millions of dollars) of US household appliances")
+```
+
+## Problem 3.3
+
+```{r}
+ds= read.csv("LaptopSalesJanuary2008.csv")
+```
+
+```{r}
+head(ds)
+```
+
+
+#### 1.Create a bar chart, showing the average retail price by store. Which store has the highest average? Which has the lowest?
+
+```{r}
+ggplot(ds) +
+  aes(
+    x = Store.Postcode,
+    y = Retail.Price,
+    colour = Store.Postcode
+  ) +
+  geom_col(fill = "#112446") +
+  scale_color_manual(
+    values = c(`CR7 8LE` = "#F8766D",
+    `E2 0RY` = "#E48432",
+    `E7 8NW` = "#CE9300",
+    `KT2 5AU` = "#ACA000",
+    `N17 6QA` = "#7FAC07",
+    `N3 1DH` = "#31B425",
+    `NW5 2QH` = "#00BB4C",
+    `S1P 3AU` = "#00BF83",
+    `SE1 2BN` = "#00BEB1",
+    `SE8 3JD` = "#00BAD5",
+    `SW12 9HD` = "#20AFEC",
+    `SW18 1NN` = "#549FFB",
+    `SW1P 3AU` = "#918BFD",
+    `SW1V 4QQ` = "#D274FB",
+    `W10 6HQ` = "#EB6AE0",
+    `W4 3PH` = "#FF61C3")
+  ) +
+   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  
+
+```
+
+##### SW1P 3AU has the higest average whereas S1P 3AU has the lowest average.
+
+
+### 2.To better compare retail prices across stores, create side-by-side boxplots of retail price by store. Now compare the prices in the two stores from (a). Does there seem to be a difference between their price distributions?
+
+
+```{r}
+ggplot(ds) +
+  aes(
+    x = Store.Postcode,
+    y = Retail.Price,
+    colour = Store.Postcode
+  ) +
+  geom_boxplot(fill = "#112446") +
+  scale_color_hue(direction = 1) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  
+```
+
+##### From the Boxplots we can see that S1P 3AU has a Symmetrical distribution and the distribution of SW1P 3AU is positively skewed (skewed right).
