@@ -1,0 +1,130 @@
+---
+title: "Assignment 6 "
+author: "Prashant Gupta"
+Vid: "V01038654"
+output: html_document
+---
+
+```{r}
+library(forecast)
+library(ggplot2)
+toys<-read.csv("ToysRUsRevenues.csv", stringsAsFactors = FALSE)
+str(toys)
+```
+
+```{r}
+head(toys)
+```
+
+```{r}
+#Create a time series object out of it
+toysTS <- ts(toys$Revenue, start=c(1992, 1),frequency=4)
+
+yrange = range(toysTS)
+
+#set up the plot
+plot(c(1992,1995), yrange, type="n",xlab="Year", ylab="Revenue(millions)", bty="l", xaxt="n",yaxt="n")
+
+#Add the time series air
+lines(toysTS, bty="l")
+
+#add the x-axis
+axis(1, at=seq(1992,1995,1), labels=format(seq(1992,1995,1)))
+
+#add the y-axis
+axis(2, at=seq(1000,4500,500), labels=format(seq(1,4.5,.5)), las=2)
+```
+
+```{r}
+ToysTrain<-window(toysTS,1992,c(1995,2))
+ToysTrain
+```
+
+
+```{r}
+toysLinearSeason <- tslm(ToysTrain~trend+season)
+summary(toysLinearSeason)
+```
+
+```{r}
+#time series object
+toys.ts <- ts(toys$Revenue.in.million..., start=c(1,1), freq=4)
+yrange=range(toys.ts)
+
+#autoplotting
+autoplot(toys.ts)
+```
+
+```{r}
+validLength<-4
+trainLength<-length(toys.ts)-validLength
+trainLength
+```
+
+```{r}
+SalesTrain<-window(toys.ts,end=c(1,trainLength))
+SalesValid<-window(toys.ts,start=c(1,trainLength+1))
+SalesTrain
+```
+
+```{r}
+SalesValid
+```
+
+```{r}
+#call it modelB (as in 5b) and have the dependent variable transformed
+modelB<-tslm(log(SalesTrain) ~ trend + season)
+summary(modelB)
+```
+
+```{r}
+# use the named coefficients
+q21Forecast <- modelB$coefficients["(Intercept)"] + modelB$coefficients["trend"]*21
+
+q22Forecast <- modelB$coefficients["(Intercept)"] + modelB$coefficients["trend"]*22 + modelB$coefficients["season2"]
+
+#convert them back and simpy echo them
+exp(q21Forecast)
+```
+
+```{r}
+exp(q22Forecast)
+```
+
+```{r}
+#Helps set up the plot
+yrange = range(toys.ts)
+
+#set up the plot
+
+plot(c(1,6),c(yrange[1],yrange[2]),type="n",xlab="Year", ylab="Department Sales", bty="l",xaxt="n",yaxt="n")
+
+#add the time series air
+lines(toys.ts, bty="l")
+
+#add the x-axis
+axis(1, at=seq(1,6,1), labels=format(seq(1,6,1)))
+#add the y-axis
+axis(2, at=seq(45000,105000,5000), labels=format(seq(45,105,5.0)), las=2)
+
+#add the y-axis
+
+lines(exp(modelB$fitted), col="red")
+```
+
+```{r}
+forecasterror<-toys.ts-exp(modelB$fitted)
+autoplot(forecasterror)
+```
+
+#### - Which two statistics (and their values) measure how well this model fits the training data?
+#####   The t-value of 0.352 for the season2 variable is a measure of how many standard deviations our coefficient estimate is far away from zero.
+##### The p-value for trend 9.24e-16
+
+
+#### - After adjusting for trend, what is the average difference between sales in Q3 and sales in Q1?
+##### Quarter 3 has a coefficient of 89.17 which is the difference between it sales and the base sales which is Quarter1.
+
+
+#### - Which quarter (Q1, Q2, Q3, or Q4) has the highest average sales?
+##### Quarter 4 with a coefficient of 0.976415 has the highest average sales.
