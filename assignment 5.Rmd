@@ -1,0 +1,141 @@
+---
+title: "Assignment 5"
+author: "Prashant Gupta"
+Vid: "V01038654"
+output: html_document
+---
+
+```{r message=FALSE, warning=FALSE}
+library(dummies)
+library(dplyr)
+library(caret)
+library(class)
+```
+
+
+```{r}
+mydata <- read.csv("UniversalBank.csv")
+
+
+summary(mydata)
+```
+
+## A
+
+```{r}
+mydata$Education = as.factor(mydata$Education)
+
+#removing ID and ZIP code from our dataset and transforming categorical predictor Education with more than two categories into dummy variable.
+mydata_dummy = dummy.data.frame(select(mydata,-c(ZIP.Code,ID)))
+head(mydata_dummy)
+```
+
+```{r}
+mydata_dummy$Personal.Loan = as.factor(mydata_dummy$Personal.Loan)
+```
+
+```{r}
+set.seed(1)
+```
+
+### Dividing the data into validation set and training set.
+
+```{r}
+
+train.index <- sample(row.names(mydata_dummy), 0.6*dim(mydata_dummy)[1]) 
+test.index <- setdiff(row.names(mydata_dummy), train.index) 
+train_data <- mydata_dummy[train.index, ]
+valid_data <- mydata_dummy[test.index, ]
+
+```
+
+### Classifying the given customer
+
+```{r}
+
+Given_CusData = data.frame(Age=40 , Experience=10, Income = 84, Family = 2, CCAvg = 2, Education1 = 0, Education2 = 1, Education3 = 0, Mortgage = 0, Securities.Account = 0, CD.Account = 0, Online = 1,  CreditCard = 1, stringsAsFactors = FALSE)
+Given_CusData
+```
+
+```{r}
+norm.values <- preProcess(train_data[, -c(10)], method=c("center", "scale"))
+train_data[, -c(10)] <- predict(norm.values, train_data[, -c(10)])
+valid_data[, -c(10)] <- predict(norm.values, valid_data[, -c(10)])
+new.df <- predict(norm.values, Given_CusData)
+
+knn.1 <- knn(train = train_data[,-c(10)],test = new.df, cl = train_data[,10], k=5, prob=TRUE)
+knn.attributes <- attributes(knn.1)
+
+knn.attributes[1]
+```
+
+```{r}
+knn.attributes[3]
+```
+
+
+## B
+
+```{r}
+my_accurateChoice <- data.frame(k = seq(1, 14, 1), accuracy = rep(0, 14))
+
+for(i in 1:14) {
+  test1 <- knn(train = train_data[,-10],test = valid_data[,-10], cl = train_data[,10], k=i, prob=TRUE)
+  my_accurateChoice[i, 2] <- confusionMatrix(test1, valid_data[,10])$overall[1]
+}
+my_accurateChoice
+```
+
+## C
+
+```{r}
+test2 <- knn(train = train_data[,-10],test = valid_data[,-10], cl = train_data[,10], k=3, prob=TRUE)
+confusionMatrix(test2, valid_data[,10])
+```
+
+
+# D
+
+```{r}
+Given_CusData2= data.frame(Age = 40, Experience = 10, Income = 84, Family = 2, CCAvg = 2, Education_1 = 0, Education_2 = 1, Education_3 = 0, Mortgage = 0, Securities.Account = 0, CD.Account = 0, Online = 1, CreditCard = 1)
+my_knn <- knn(train = train_data[,-10],test = Given_CusData2, cl = train_data[,10], k=3, prob=TRUE)
+my_knn
+```
+
+## Supplemental Problem
+
+## A
+```{r}
+library(e1071)
+
+loans.nb <- naiveBayes(Personal.Loan ~ Securities.Account + CD.Account + Online + CreditCard, data = train_data)
+loans.nb
+```
+
+
+## B
+#### Showing the confusion matrix for the validation data
+
+```{r}
+pred.class <- predict(loans.nb, newdata = valid_data)
+confusionMatrix(pred.class, valid_data$Personal.Loan)
+```
+
+## C
+
+#### Consider the following customer: Securities Account = 0, CD Account = 0, Online = 1 and Credit Card = 1. Classify the customer in their most likely class.
+
+```{r}
+new.cust <- data.frame(Securities.Account = 0, 
+                       CD.Account = 0, 
+                       Online = 1,            
+                       CreditCard = 1)
+```
+
+
+
+```{r}
+predict(loans.nb, newdata = new.cust, type = "raw")
+predict(loans.nb, newdata = new.cust)
+```
+
