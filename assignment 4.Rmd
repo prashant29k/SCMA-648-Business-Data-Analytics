@@ -1,0 +1,151 @@
+---
+title: "Assignment 4"
+author: "Prashant Gupta"
+Vid: "V01038654"
+output: html_document
+---
+```{r}
+data <-read.csv("Tayko.csv")
+head(data)
+```
+
+```{r}
+dim(data)
+```
+
+```{r}
+summary(data)
+```
+
+```{r}
+str(data)
+```
+
+
+### A. Explore the spending amount using boxplots. Does there seem to be a relationship?
+```{r}
+boxplot(Spending ~ Gender.male, data)
+```
+```{r}
+library(tidyverse)
+data %>% group_by(Gender.male) %>% summarise(Mean = mean(Spending), Min = min(Spending), Max = max(Spending))
+```
+
+
+### Interpretation: The maximum value on spending varies according to gender. Males have slightly lower average spending habits than females. Males, however, have spent the most.
+
+
+```{r}
+boxplot(Spending ~ Web.order, data)
+```
+```{r}
+data %>% group_by(Web.order) %>% summarise(Mean = mean(Spending), Min = min(Spending), Max = max(Spending))
+```
+### Interpretation: Web.order has more average spending habits than offline purchases, but offline purchases have also spent the most.
+
+
+### B. Explore the relationship between spending and each of the two continuous predictors using scatter plots. Does there seem to be a linear relationship?
+```{r}
+temp =  sort(cor(data)['Spending',], decreasing = T)
+temp
+```
+
+```{r}
+library(pheatmap)
+pheatmap(cor(data))
+```
+
+
+### Interpretation: Frequency was related to spending. Purchase is also moderately correlated with spending, but it is a binary relationship.
+```{r}
+library()
+ggplot(data, aes(y = Spending, x = last_update_days_ago)) +
+  geom_point(alpha = 0.6) 
+```
+```{r}
+ggplot(data, aes(y = Spending, x = Freq)) +
+  geom_point(alpha = 0.6) 
+```
+
+
+```{r}
+lrm = lm(Spending ~ last_update_days_ago, data)
+summary(lrm)
+```
+
+### Interpretation: The only continuous variables are the most recent update and spending. However, the R Square came out to be 0.066, which is extremely low. Only a 5.5% correlation exists between spending and the last update days ago.
+
+### C. To fit a predictive model for Spending:
+
+### Partition the 2000 records into training (60%) and validation (40%) sets.
+```{r}
+ind = sample(dim(data)[1], round(.6*dim(data)[1]))
+
+training = data[ind,]
+validation = data[-ind,]
+validation_ = validation %>% select(!Spending)
+dim(training)
+```
+
+```{r}
+dim(training)[1] / dim(data)[1]
+```
+### Interpretation: The entire data set is divided into 60% for training and 40% for validation.
+
+### Run a multiple linear regression model for Spending vs. all six predictors. Give the estimated predictive equation.
+```{r}
+temp[1:7]
+```
+```{r}
+names(data)
+```
+
+```{r}
+lm1 = lm(Spending ~ Purchase + Address_is_res + Gender.male + Web.order + last_update_days_ago + Freq + US,data)
+summary(lm1)
+```
+equation: -17.114568 + 101.360224xPurchase + -73.886730xAddress_is_res + -1.050156xGender.male + -4.036303*Web.order + -0.007306xlast_update_days_ago + 77.743736x + -8.197853x 
+
+```{r}
+step(lm1, direction = "backward")
+```
+
+### Based on this model, what type of purchaser is most likely to spend a large amount of money?
+
+
+### If we used backward elimination to reduce the number of predictors, which predictor would be dropped first from the model?
+```{r}
+lm1 = lm(Spending ~ Purchase + Address_is_res + factor(Web.order) + Gender.male +last_update_days_ago + Freq + US,data )
+summary(lm1)
+```
+
+
+### Show how the prediction and the prediction error are computed for the first purchase in the validation set.
+```{r}
+predict.lm = predict(lm1, validation_[1,])
+predict.lm
+```
+
+### Evaluate the predictive accuracy of the model by examining its performance on the validation set.
+```{r}
+library(caret)
+data.frame(
+  MAE = MAE(predict.lm, validation[1,dim(validation)[2]]),
+  MSE = RMSE(predict.lm, validation[1,dim(validation)[2]])^2,
+  RMSE = RMSE(predict.lm, validation[1,dim(validation)[2]])
+)
+
+```
+
+
+### Create a histogram of the model residuals. Do they appear to follow a normal distribution? How does this affect the predictive performance of the model?
+```{r}
+library(ggplot2)
+
+#create histogram of residuals
+ggplot(data = data, aes(x = lm1$residuals)) +
+    geom_histogram(fill = 'steelblue', color = 'black') +
+    labs(title = 'Histogram of Residuals', x = 'Residuals', y = 'Frequency')
+```
+
+#### Interpretation: When the residuals are not normally distributed, the hypothesis that they are from a random dataset is rejected. This means that your (regression) model does not explain all of the trends in the dataset.
